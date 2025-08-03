@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GraduationCap, Search, Filter, Eye, CheckCircle, XCircle, Clock } from 'lucide-react'
 import Link from 'next/link'
 
@@ -114,30 +114,65 @@ const mockApplications: Application[] = [
 ]
 
 export default function AdminPage() {
-  const [applications, setApplications] = useState<Application[]>(mockApplications)
+  const [applications, setApplications] = useState<Application[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [subjectFilter, setSubjectFilter] = useState('all')
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
 
+  // Filter applications client-side for search
   const filteredApplications = applications.filter(app => {
     const matchesSearch = 
-      app.personalInfo.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.personalInfo.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.personalInfo.email.toLowerCase().includes(searchTerm.toLowerCase())
+      app.personal_info.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.personal_info.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.personal_info.email.toLowerCase().includes(searchTerm.toLowerCase())
     
-    const matchesStatus = statusFilter === 'all' || app.status === statusFilter
-    const matchesSubject = subjectFilter === 'all' || app.experience.subjects.includes(subjectFilter)
-    
-    return matchesSearch && matchesStatus && matchesSubject
+    return matchesSearch
   })
 
-  const updateApplicationStatus = (id: string, status: Application['status']) => {
-    setApplications(prev => 
-      prev.map(app => 
-        app.id === id ? { ...app, status } : app
-      )
-    )
+  // Fetch applications on component mount
+  useEffect(() => {
+    fetchApplications()
+  }, [])
+
+  const fetchApplications = async () => {
+    try {
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') params.append('status', statusFilter)
+      if (subjectFilter !== 'all') params.append('subject', subjectFilter)
+      if (searchTerm) params.append('search', searchTerm)
+
+      const response = await fetch(`/api/applications?${params}`)
+      if (!response.ok) throw new Error('Failed to fetch applications')
+      
+      const data = await response.json()
+      setApplications(data)
+    } catch (error) {
+      console.error('Error fetching applications:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateApplicationStatus = async (id: string, status: Application['status']) => {
+    try {
+      const response = await fetch(`/api/applications/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      })
+
+      if (!response.ok) throw new Error('Failed to update application')
+
+      // Refresh applications after update
+      fetchApplications()
+    } catch (error) {
+      console.error('Error updating application:', error)
+      alert('Failed to update application status')
+    }
   }
 
   const getStatusColor = (status: Application['status']) => {
@@ -300,11 +335,14 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Applications Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Applications ({filteredApplications.length})</h3>
-          </div>
+                 {/* Applications Table */}
+         <div className="bg-white rounded-lg shadow overflow-hidden">
+           <div className="px-6 py-4 border-b border-gray-200">
+             <h3 className="text-lg font-semibold text-gray-900">
+               Applications ({filteredApplications.length})
+               {loading && <span className="text-sm text-gray-500 ml-2">Loading...</span>}
+             </h3>
+           </div>
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -333,42 +371,42 @@ export default function AdminPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredApplications.map((application) => (
                   <tr key={application.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {application.personalInfo.firstName} {application.personalInfo.lastName}
-                        </div>
-                        <div className="text-sm text-gray-500">{application.personalInfo.email}</div>
-                        <div className="text-sm text-gray-500">{application.personalInfo.phone}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">{application.education.degree}</div>
-                        <div className="text-sm text-gray-500">{application.education.institution}</div>
-                        <div className="text-sm text-gray-500">{application.education.graduationYear}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">{application.experience.yearsOfTeaching} years</div>
-                        <div className="text-sm text-gray-500">
-                          {application.experience.subjects.join(', ')}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {application.experience.classes.join(', ')}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">{application.availability.preferredHours} hours/week</div>
-                        <div className="text-sm text-gray-500">
-                          {application.availability.availableDays.join(', ')}
-                        </div>
-                        <div className="text-sm text-gray-500">{application.availability.timeZone}</div>
-                      </div>
-                    </td>
+                                         <td className="px-6 py-4 whitespace-nowrap">
+                       <div>
+                         <div className="text-sm font-medium text-gray-900">
+                           {application.personal_info.firstName} {application.personal_info.lastName}
+                         </div>
+                         <div className="text-sm text-gray-500">{application.personal_info.email}</div>
+                         <div className="text-sm text-gray-500">{application.personal_info.phone}</div>
+                       </div>
+                     </td>
+                     <td className="px-6 py-4 whitespace-nowrap">
+                       <div>
+                         <div className="text-sm text-gray-900">{application.education.degree}</div>
+                         <div className="text-sm text-gray-500">{application.education.institution}</div>
+                         <div className="text-sm text-gray-500">{application.education.graduationYear}</div>
+                       </div>
+                     </td>
+                     <td className="px-6 py-4 whitespace-nowrap">
+                       <div>
+                         <div className="text-sm text-gray-900">{application.experience.yearsOfTeaching} years</div>
+                         <div className="text-sm text-gray-500">
+                           {application.experience.subjects.join(', ')}
+                         </div>
+                         <div className="text-sm text-gray-500">
+                           {application.experience.classes.join(', ')}
+                         </div>
+                       </div>
+                     </td>
+                     <td className="px-6 py-4 whitespace-nowrap">
+                       <div>
+                         <div className="text-sm text-gray-900">{application.availability.preferredHours} hours/week</div>
+                         <div className="text-sm text-gray-500">
+                           {application.availability.availableDays.join(', ')}
+                         </div>
+                         <div className="text-sm text-gray-500">{application.availability.timeZone}</div>
+                       </div>
+                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
                         {getStatusIcon(application.status)}
