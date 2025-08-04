@@ -1,168 +1,233 @@
 # Mentorscue Tutor Portal
 
-A professional tutor selection and management web application for Mentorscue. Built with Next.js, TypeScript, and Tailwind CSS.
+A comprehensive web application for managing tutor applications and scheduling for Mentorscue tuition business. Built with Next.js 14, TypeScript, Tailwind CSS, and Supabase.
 
 ## 🚀 Features
 
-### For Tutors (Application Form)
-- **Multi-step Application Process**: 5-step comprehensive application form
-- **Personal Information**: Name, email, phone, date of birth
-- **Education Details**: Degree, institution, graduation year, GPA
-- **Teaching Experience**: Years of experience, subjects, classes taught
-- **Availability**: Preferred hours, available days, timezone
-- **Additional Information**: Motivation, specializations, references
+### For Tutors (Application System)
+- **Multi-step Application Form**: Professional application process with 5 comprehensive steps
+- **Personal Information**: Name, contact details, address
+- **Educational Background**: Degree, institution, graduation year, GPA
+- **Teaching Experience**: Years of experience, previous institutions, certifications
+- **Availability & Preferences**: Preferred subjects, classes, available hours, timezone
+- **Additional Information**: Teaching philosophy, references, why they want to join
+- **Status Tracking**: Real-time application status updates
 
-### For Students (Scheduling)
-- **Tutor Discovery**: Browse tutors by subject and class level
-- **Interactive Calendar**: Select dates and view available time slots
-- **Real-time Availability**: See which time slots are available/booked
-- **Booking System**: Complete booking form with session details
-- **Session Management**: Duration selection, pricing calculation
-- **Responsive Design**: Works on desktop and mobile devices
+### For Head Managers (Tutor Management)
+- **Tutor Dashboard**: Complete overview of all tutors with filtering capabilities
+- **Schedule Management**: Assign sessions to tutors with conflict detection
+- **Tutor Profiles**: View detailed tutor information, ratings, and availability
+- **Calendar Interface**: Visual calendar for date selection and time slot management
+- **Session Scheduling**: Create, edit, and manage tutor sessions
+- **Status Management**: Track tutor status (active, inactive, on leave)
+- **Add New Tutors**: Comprehensive form to add new tutors to the system
 
-### For Admins (Dashboard)
-- **Application Overview**: Total, pending, approved, rejected applications
-- **Advanced Filtering**: Search by name/email, filter by status and subject
-- **Application Management**: View details, approve, reject applications
-- **Booking Management**: View and manage all scheduled sessions
-- **Responsive Design**: Works on desktop and mobile devices
+### For Administrators (Admin Dashboard)
+- **Application Management**: Review and manage all tutor applications
+- **Advanced Filtering**: Filter by status, subject, class level, search terms
+- **Status Updates**: Approve, reject, or mark applications for review
+- **Detailed View**: Complete application details in modal view
+- **Statistics**: Overview of application counts and status distribution
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
 - **Icons**: Lucide React
-- **UI Components**: Headless UI, Heroicons
-- **Database**: Supabase (planned)
-- **Deployment**: Vercel (planned)
+- **Database**: Supabase (PostgreSQL)
+- **Deployment**: Vercel (Free Tier)
+- **Authentication**: Supabase Auth (Ready for implementation)
 
-## 📦 Installation
+## 📁 Project Structure
 
-1. Clone the repository:
+```
+mentorscue-tutor-portal/
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── applications/          # Tutor application endpoints
+│   │   │   ├── tutors/               # Tutor management endpoints
+│   │   │   └── schedules/            # Schedule management endpoints
+│   │   ├── apply/                    # Tutor application form
+│   │   ├── admin/                    # Admin dashboard
+│   │   ├── schedule/                 # Tutor management & scheduling
+│   │   ├── layout.tsx               # Root layout
+│   │   └── page.tsx                 # Landing page
+│   ├── lib/
+│   │   └── supabase.ts              # Supabase client & types
+│   └── components/                   # Reusable components
+├── database-schema.sql              # Database schema
+├── .env.local                      # Environment variables
+└── README.md                       # This file
+```
+
+## 🗄️ Database Schema
+
+### Tables
+- **applications**: Tutor application submissions
+- **tutors**: Tutor profiles and information
+- **schedules**: Tutor session assignments
+- **subjects**: Available subjects
+- **classes**: Class levels
+
+### Key Features
+- **JSONB Storage**: Flexible data structure for application details
+- **Array Fields**: Support for multiple subjects and classes
+- **Indexes**: Optimized for fast queries and filtering
+- **Triggers**: Automatic timestamp updates
+- **Constraints**: Data integrity with check constraints
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Supabase account
+
+### Installation
+
+1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone https://github.com/Irfan-Habeeb/mentorscue-tutor-portal.git
 cd mentorscue-tutor-portal
 ```
 
-2. Install dependencies:
+2. **Install dependencies**
 ```bash
 npm install
 ```
 
-3. Run the development server:
+3. **Set up environment variables**
+```bash
+cp .env.local.example .env.local
+```
+Edit `.env.local` with your Supabase credentials:
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+4. **Set up Supabase Database**
+- Create a new Supabase project
+- Run the SQL from `database-schema.sql` in the SQL Editor
+- Copy your project URL and anon key to `.env.local`
+
+5. **Run the development server**
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. **Open your browser**
+Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 🏗️ Project Structure
+## 📋 Pages
 
-```
-src/
-├── app/
-│   ├── layout.tsx          # Root layout
-│   ├── page.tsx            # Home page
-│   ├── apply/
-│   │   └── page.tsx        # Tutor application form
-│   └── admin/
-│       └── page.tsx        # Admin dashboard
-└── components/             # Reusable components (planned)
-```
+### Landing Page (`/`)
+- Hero section with navigation
+- Feature highlights
+- Links to application and management systems
+
+### Tutor Application (`/apply`)
+- 5-step application form
+- Progress indicator
+- Form validation
+- Success confirmation
+
+### Admin Dashboard (`/admin`)
+- Application overview with statistics
+- Advanced filtering and search
+- Status management
+- Detailed application view
+
+### Tutor Management (`/schedule`)
+- Tutor listing with filters
+- Calendar-based scheduling
+- Session management
+- Add new tutors
+- Conflict detection
 
 ## 🎨 Design System
 
-- **Colors**: Blue primary (#3B82F6), gray scale
-- **Typography**: Inter font family
-- **Components**: Consistent button styles, form inputs, cards
-- **Responsive**: Mobile-first design approach
+### Colors
+- **Primary**: Blue (#3B82F6)
+- **Success**: Green (#10B981)
+- **Warning**: Yellow (#F59E0B)
+- **Error**: Red (#EF4444)
+- **Background**: Gray (#F9FAFB)
 
-## 🔧 Development
+### Typography
+- **Font**: Inter (Google Fonts)
+- **Headings**: Bold, various sizes
+- **Body**: Regular, readable
 
-### Available Scripts
+### Components
+- **Cards**: White background with shadow
+- **Buttons**: Rounded corners, hover effects
+- **Forms**: Clean inputs with focus states
+- **Modals**: Overlay with backdrop
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+## 🔧 API Endpoints
 
-### Code Style
+### Applications
+- `POST /api/applications` - Submit new application
+- `GET /api/applications` - Fetch applications with filters
+- `PATCH /api/applications/[id]` - Update application status
 
-- TypeScript for type safety
-- Tailwind CSS for styling
-- ESLint for code quality
-- Prettier for code formatting
+### Tutors
+- `POST /api/tutors` - Add new tutor
+- `GET /api/tutors` - Fetch tutors with filters
+
+### Schedules
+- `POST /api/schedules` - Create new schedule
+- `GET /api/schedules` - Fetch schedules with filters
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Deploy automatically on every push
+### Vercel Deployment
+1. Push code to GitHub
+2. Connect repository to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy automatically
 
 ### Environment Variables
-
-Create a `.env.local` file for local development:
-
-```env
-# Add your environment variables here
+```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
 ```
 
-## 📱 Pages
+## 🔒 Security Features
 
-### Home Page (`/`)
-- Landing page with hero section
-- Navigation to application form and admin dashboard
-- Feature highlights
+- **Input Validation**: Server-side validation for all forms
+- **SQL Injection Protection**: Supabase parameterized queries
+- **CORS Protection**: Configured for production domains
+- **Environment Variables**: Secure credential management
 
-### Application Form (`/apply`)
-- 5-step application process
-- Form validation
-- Progress indicator
-- Success confirmation
+## 📊 Performance
 
-### Scheduling System (`/schedule`)
-- Tutor discovery and filtering
-- Interactive calendar
-- Time slot selection
-- Booking form with pricing
-- Session management
+- **Static Generation**: Optimized for fast loading
+- **Image Optimization**: Next.js built-in optimization
+- **Database Indexes**: Optimized queries
+- **CDN**: Vercel's global CDN
 
-### Admin Dashboard (`/admin`)
-- Application statistics
-- Search and filtering
-- Application management
-- Detailed view modal
+## 🔄 Future Enhancements
 
-## 🔮 Future Enhancements
-
-### Phase 2
-- [x] Supabase integration for data persistence
-- [x] Comprehensive scheduling system
-- [ ] Email notifications
-- [ ] File upload for resumes
-- [ ] Interview scheduling
-
-### Phase 3
-- [ ] Tutor manager dashboard
-- [ ] Analytics and reporting
-- [ ] Email automation
-- [ ] Advanced filtering
-
-### Phase 4
-- [ ] Real-time notifications
-- [ ] Mobile app
-- [ ] Payment integration
-- [ ] Video interviews
+- [x] **Supabase Integration**: Complete database integration
+- [x] **Comprehensive Scheduling System**: Tutor management and scheduling
+- [ ] **Authentication System**: User login and role management
+- [ ] **Email Notifications**: Application status updates
+- [ ] **File Upload**: Resume and document uploads
+- [ ] **Real-time Updates**: Live status changes
+- [ ] **Mobile App**: React Native companion app
+- [ ] **Analytics Dashboard**: Performance metrics
+- [ ] **Payment Integration**: Session payment tracking
+- [ ] **Video Integration**: Online session capabilities
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Submit a pull request
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📄 License
 
@@ -170,8 +235,8 @@ This project is licensed under the MIT License.
 
 ## 📞 Support
 
-For support, email support@mentorscue.com or create an issue in this repository.
+For support or questions, please contact the development team.
 
 ---
 
-Built with ❤️ for Mentorscue
+**Built with ❤️ for Mentorscue**

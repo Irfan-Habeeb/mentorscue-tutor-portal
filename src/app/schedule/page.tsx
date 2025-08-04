@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { GraduationCap, Calendar, Clock, Users, MapPin, BookOpen, ArrowLeft, CheckCircle, XCircle } from 'lucide-react'
+import { GraduationCap, Calendar, Clock, Users, MapPin, BookOpen, ArrowLeft, CheckCircle, XCircle, Plus, Edit, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 
 interface Tutor {
@@ -12,8 +12,23 @@ interface Tutor {
   experience: string
   rating: number
   hourlyRate: number
-  avatar: string
   timezone: string
+  status: 'active' | 'inactive' | 'on_leave'
+}
+
+interface Schedule {
+  id: string
+  tutorId: string
+  tutorName: string
+  date: string
+  startTime: string
+  endTime: string
+  subject: string
+  classLevel: string
+  studentName: string
+  studentContact: string
+  status: 'scheduled' | 'completed' | 'cancelled'
+  notes?: string
 }
 
 interface TimeSlot {
@@ -21,24 +36,8 @@ interface TimeSlot {
   startTime: string
   endTime: string
   isAvailable: boolean
-  isBooked: boolean
-  studentName?: string
-  subject?: string
-}
-
-interface Booking {
-  id: string
-  tutorId: string
-  studentName: string
-  studentEmail: string
-  subject: string
-  date: string
-  startTime: string
-  endTime: string
-  duration: number
-  totalPrice: number
-  status: 'pending' | 'confirmed' | 'cancelled'
-  notes?: string
+  isScheduled: boolean
+  schedule?: Schedule
 }
 
 // Mock data
@@ -51,8 +50,8 @@ const mockTutors: Tutor[] = [
     experience: '5-10 years',
     rating: 4.8,
     hourlyRate: 45,
-    avatar: '/api/placeholder/60/60',
-    timezone: 'EST'
+    timezone: 'EST',
+    status: 'active'
   },
   {
     id: '2',
@@ -62,8 +61,8 @@ const mockTutors: Tutor[] = [
     experience: '3-5 years',
     rating: 4.9,
     hourlyRate: 50,
-    avatar: '/api/placeholder/60/60',
-    timezone: 'PST'
+    timezone: 'PST',
+    status: 'active'
   },
   {
     id: '3',
@@ -73,8 +72,19 @@ const mockTutors: Tutor[] = [
     experience: '1-3 years',
     rating: 4.7,
     hourlyRate: 35,
-    avatar: '/api/placeholder/60/60',
-    timezone: 'EST'
+    timezone: 'EST',
+    status: 'active'
+  },
+  {
+    id: '4',
+    name: 'Mr. David Wilson',
+    subjects: ['Chemistry', 'Biology'],
+    classes: ['Class 9-10', 'Class 11-12'],
+    experience: '2-4 years',
+    rating: 4.6,
+    hourlyRate: 40,
+    timezone: 'EST',
+    status: 'active'
   }
 ]
 
@@ -85,40 +95,62 @@ const timeSlots = [
   '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'
 ]
 
+const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Computer Science', 'Literature']
+const classes = ['Class 1-5', 'Class 6-8', 'Class 9-10', 'Class 11-12', 'Undergraduate']
+
 export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null)
-  const [showBookingForm, setShowBookingForm] = useState(false)
-  const [bookingData, setBookingData] = useState({
-    studentName: '',
-    studentEmail: '',
-    subject: '',
-    duration: 1,
-    notes: ''
-  })
+  const [showScheduleForm, setShowScheduleForm] = useState(false)
+  const [showAddTutorForm, setShowAddTutorForm] = useState(false)
+  const [schedules, setSchedules] = useState<Schedule[]>([])
   const [filterSubject, setFilterSubject] = useState('all')
   const [filterClass, setFilterClass] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
 
-  const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Computer Science']
-  const classes = ['Class 1-5', 'Class 6-8', 'Class 9-10', 'Class 11-12', 'Undergraduate']
+  const [scheduleData, setScheduleData] = useState({
+    subject: '',
+    classLevel: '',
+    studentName: '',
+    studentContact: '',
+    notes: ''
+  })
+
+  const [newTutorData, setNewTutorData] = useState({
+    name: '',
+    subjects: [] as string[],
+    classes: [] as string[],
+    experience: '',
+    hourlyRate: '',
+    timezone: '',
+    status: 'active' as 'active' | 'inactive' | 'on_leave'
+  })
 
   const filteredTutors = mockTutors.filter(tutor => {
     const matchesSubject = filterSubject === 'all' || tutor.subjects.includes(filterSubject)
     const matchesClass = filterClass === 'all' || tutor.classes.includes(filterClass)
-    return matchesSubject && matchesClass
+    const matchesStatus = filterStatus === 'all' || tutor.status === filterStatus
+    return matchesSubject && matchesClass && matchesStatus
   })
 
   const generateTimeSlots = (date: Date, tutor: Tutor): TimeSlot[] => {
-    return timeSlots.map((time, index) => ({
-      id: `${date.toISOString()}-${time}-${tutor.id}`,
-      startTime: time,
-      endTime: timeSlots[index + 1] || '21:00',
-      isAvailable: Math.random() > 0.3, // 70% availability for demo
-      isBooked: Math.random() > 0.8, // 20% booked for demo
-      studentName: Math.random() > 0.8 ? 'John Doe' : undefined,
-      subject: Math.random() > 0.8 ? 'Mathematics' : undefined
-    }))
+    return timeSlots.map((time, index) => {
+      const existingSchedule = schedules.find(s => 
+        s.tutorId === tutor.id && 
+        s.date === date.toISOString().split('T')[0] && 
+        s.startTime === time
+      )
+
+      return {
+        id: `${date.toISOString()}-${time}-${tutor.id}`,
+        startTime: time,
+        endTime: timeSlots[index + 1] || '21:00',
+        isAvailable: !existingSchedule,
+        isScheduled: !!existingSchedule,
+        schedule: existingSchedule
+      }
+    })
   }
 
   const handleDateSelect = (date: Date) => {
@@ -132,56 +164,77 @@ export default function SchedulePage() {
   }
 
   const handleTimeSlotSelect = (slot: TimeSlot) => {
-    if (slot.isAvailable && !slot.isBooked) {
+    if (slot.isAvailable) {
       setSelectedTimeSlot(slot)
     }
   }
 
-  const handleBooking = async (e: React.FormEvent) => {
+  const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!selectedTutor || !selectedTimeSlot) return
 
-    try {
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tutorId: selectedTutor.id,
-          studentName: bookingData.studentName,
-          studentEmail: bookingData.studentEmail,
-          subject: bookingData.subject,
-          date: selectedDate.toISOString().split('T')[0],
-          startTime: selectedTimeSlot.startTime,
-          endTime: selectedTimeSlot.endTime,
-          duration: bookingData.duration,
-          totalPrice: selectedTutor.hourlyRate * bookingData.duration,
-          notes: bookingData.notes
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to submit booking')
-      }
-
-      // Reset form
-      setShowBookingForm(false)
-      setSelectedTimeSlot(null)
-      setBookingData({
-        studentName: '',
-        studentEmail: '',
-        subject: '',
-        duration: 1,
-        notes: ''
-      })
-      
-      alert('Booking submitted successfully! You will receive a confirmation email shortly.')
-    } catch (error) {
-      console.error('Error submitting booking:', error)
-      alert('Failed to submit booking. Please try again.')
+    const newSchedule: Schedule = {
+      id: Date.now().toString(),
+      tutorId: selectedTutor.id,
+      tutorName: selectedTutor.name,
+      date: selectedDate.toISOString().split('T')[0],
+      startTime: selectedTimeSlot.startTime,
+      endTime: selectedTimeSlot.endTime,
+      subject: scheduleData.subject,
+      classLevel: scheduleData.classLevel,
+      studentName: scheduleData.studentName,
+      studentContact: scheduleData.studentContact,
+      status: 'scheduled',
+      notes: scheduleData.notes
     }
+
+    setSchedules(prev => [...prev, newSchedule])
+    
+    // Reset form
+    setShowScheduleForm(false)
+    setSelectedTimeSlot(null)
+    setScheduleData({
+      subject: '',
+      classLevel: '',
+      studentName: '',
+      studentContact: '',
+      notes: ''
+    })
+    
+    alert('Schedule created successfully!')
+  }
+
+  const handleAddTutor = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const newTutor: Tutor = {
+      id: Date.now().toString(),
+      name: newTutorData.name,
+      subjects: newTutorData.subjects,
+      classes: newTutorData.classes,
+      experience: newTutorData.experience,
+      rating: 0,
+      hourlyRate: parseFloat(newTutorData.hourlyRate),
+      timezone: newTutorData.timezone,
+      status: newTutorData.status
+    }
+
+    // In real app, this would be an API call
+    mockTutors.push(newTutor)
+    
+    setShowAddTutorForm(false)
+    setNewTutorData({
+      name: '',
+      subjects: [],
+      classes: [],
+      experience: '',
+      hourlyRate: '',
+      timezone: '',
+      status: 'active'
+    })
+    
+    alert('Tutor added successfully!')
   }
 
   const getDaysInMonth = (date: Date) => {
@@ -215,6 +268,14 @@ export default function SchedulePage() {
     return selectedDate.toDateString() === date.toDateString()
   }
 
+  const getScheduleForSlot = (tutorId: string, date: string, time: string) => {
+    return schedules.find(s => 
+      s.tutorId === tutorId && 
+      s.date === date && 
+      s.startTime === time
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -227,8 +288,15 @@ export default function SchedulePage() {
             </Link>
             <div className="flex items-center">
               <Calendar className="h-8 w-8 text-blue-600" />
-              <h1 className="ml-2 text-2xl font-bold text-gray-900">Schedule Sessions</h1>
+              <h1 className="ml-2 text-2xl font-bold text-gray-900">Tutor Management</h1>
             </div>
+            <button
+              onClick={() => setShowAddTutorForm(true)}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Tutor
+            </button>
           </div>
         </div>
       </header>
@@ -236,8 +304,8 @@ export default function SchedulePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Find Your Perfect Tutor</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Manage Tutor Schedules</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
               <select
@@ -265,12 +333,27 @@ export default function SchedulePage() {
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="on_leave">On Leave</option>
+              </select>
+            </div>
             
             <div className="flex items-end">
               <button
                 onClick={() => {
                   setFilterSubject('all')
                   setFilterClass('all')
+                  setFilterStatus('all')
                 }}
                 className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
               >
@@ -300,7 +383,16 @@ export default function SchedulePage() {
                       <Users className="h-6 w-6 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{tutor.name}</h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-900">{tutor.name}</h3>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          tutor.status === 'active' ? 'bg-green-100 text-green-800' :
+                          tutor.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {tutor.status}
+                        </span>
+                      </div>
                       <p className="text-sm text-gray-600">{tutor.experience} experience</p>
                       <div className="flex items-center mt-1">
                         <div className="flex text-yellow-400">
@@ -379,126 +471,122 @@ export default function SchedulePage() {
 
                 {/* Time Slots */}
                 <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Available Times for {formatDate(selectedDate)}
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Schedule for {formatDate(selectedDate)}
+                    </h3>
+                    <button
+                      onClick={() => setShowScheduleForm(true)}
+                      disabled={!selectedTimeSlot}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="h-4 w-4 mr-2 inline" />
+                      Schedule Session
+                    </button>
+                  </div>
                   <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                    {generateTimeSlots(selectedDate, selectedTutor).map(slot => (
-                      <button
-                        key={slot.id}
-                        onClick={() => handleTimeSlotSelect(slot)}
-                        disabled={!slot.isAvailable || slot.isBooked}
-                        className={`p-3 text-sm rounded-lg transition-colors ${
-                          slot.isBooked
-                            ? 'bg-red-100 text-red-700 cursor-not-allowed'
-                            : !slot.isAvailable
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : selectedTimeSlot?.id === slot.id
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                      >
-                        {slot.startTime}
-                        {slot.isBooked && (
-                          <div className="text-xs mt-1">Booked</div>
-                        )}
-                      </button>
-                    ))}
+                    {generateTimeSlots(selectedDate, selectedTutor).map(slot => {
+                      const schedule = getScheduleForSlot(selectedTutor.id, selectedDate.toISOString().split('T')[0], slot.startTime)
+                      return (
+                        <div
+                          key={slot.id}
+                          onClick={() => handleTimeSlotSelect(slot)}
+                          className={`p-3 text-sm rounded-lg transition-colors cursor-pointer ${
+                            schedule
+                              ? 'bg-blue-100 text-blue-700'
+                              : !slot.isAvailable
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : selectedTimeSlot?.id === slot.id
+                              ? 'bg-green-600 text-white'
+                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          }`}
+                        >
+                          <div className="text-center">
+                            <div className="font-medium">{slot.startTime}</div>
+                            {schedule && (
+                              <div className="text-xs mt-1">
+                                <div className="font-semibold">{schedule.studentName}</div>
+                                <div>{schedule.subject}</div>
+                                <div>{schedule.classLevel}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 
-                {/* Booking Button */}
-                {selectedTimeSlot && (
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Session Details</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tutor:</span>
-                        <span className="font-medium">{selectedTutor.name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Date:</span>
-                        <span className="font-medium">{formatDate(selectedDate)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Time:</span>
-                        <span className="font-medium">{selectedTimeSlot.startTime} - {selectedTimeSlot.endTime}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Rate:</span>
-                        <span className="font-medium">${selectedTutor.hourlyRate}/hour</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowBookingForm(true)}
-                      className="w-full mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Book Session
-                    </button>
+                {/* Today's Schedules */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Today's Schedules for {selectedTutor.name}
+                  </h3>
+                  <div className="space-y-3">
+                    {schedules
+                      .filter(s => s.tutorId === selectedTutor.id && s.date === selectedDate.toISOString().split('T')[0])
+                      .map(schedule => (
+                        <div key={schedule.id} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">{schedule.studentName}</div>
+                              <div className="text-sm text-gray-600">
+                                {schedule.startTime} - {schedule.endTime} • {schedule.subject} • {schedule.classLevel}
+                              </div>
+                              <div className="text-sm text-gray-500">{schedule.studentContact}</div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <button className="text-blue-600 hover:text-blue-800">
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button className="text-red-600 hover:text-red-800">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    {schedules.filter(s => s.tutorId === selectedTutor.id && s.date === selectedDate.toISOString().split('T')[0]).length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No schedules for today</p>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow p-8 text-center">
                 <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Select a Tutor</h3>
-                <p className="text-gray-600">Choose a tutor from the list to view their availability</p>
+                <p className="text-gray-600">Choose a tutor from the list to manage their schedule</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Booking Form Modal */}
-      {showBookingForm && selectedTutor && selectedTimeSlot && (
+      {/* Schedule Form Modal */}
+      {showScheduleForm && selectedTutor && selectedTimeSlot && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Book Session</h3>
+                <h3 className="text-lg font-medium text-gray-900">Schedule Session</h3>
                 <button
-                  onClick={() => setShowBookingForm(false)}
+                  onClick={() => setShowScheduleForm(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <XCircle className="h-6 w-6" />
                 </button>
               </div>
               
-              <form onSubmit={handleBooking} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Student Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={bookingData.studentName}
-                    onChange={(e) => setBookingData({...bookingData, studentName: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={bookingData.studentEmail}
-                    onChange={(e) => setBookingData({...bookingData, studentEmail: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
+              <form onSubmit={handleScheduleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Subject *
                   </label>
                   <select
                     required
-                    value={bookingData.subject}
-                    onChange={(e) => setBookingData({...bookingData, subject: e.target.value})}
+                    value={scheduleData.subject}
+                    onChange={(e) => setScheduleData({...scheduleData, subject: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select subject</option>
@@ -510,20 +598,46 @@ export default function SchedulePage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Duration (hours) *
+                    Class Level *
                   </label>
                   <select
                     required
-                    value={bookingData.duration}
-                    onChange={(e) => setBookingData({...bookingData, duration: parseInt(e.target.value)})}
+                    value={scheduleData.classLevel}
+                    onChange={(e) => setScheduleData({...scheduleData, classLevel: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value={1}>1 hour</option>
-                    <option value={1.5}>1.5 hours</option>
-                    <option value={2}>2 hours</option>
-                    <option value={2.5}>2.5 hours</option>
-                    <option value={3}>3 hours</option>
+                    <option value="">Select class level</option>
+                    {selectedTutor.classes.map(classLevel => (
+                      <option key={classLevel} value={classLevel}>{classLevel}</option>
+                    ))}
                   </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Student Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={scheduleData.studentName}
+                    onChange={(e) => setScheduleData({...scheduleData, studentName: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Student Contact *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={scheduleData.studentContact}
+                    onChange={(e) => setScheduleData({...scheduleData, studentContact: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Phone or email"
+                  />
                 </div>
                 
                 <div>
@@ -531,28 +645,32 @@ export default function SchedulePage() {
                     Notes (Optional)
                   </label>
                   <textarea
-                    value={bookingData.notes}
-                    onChange={(e) => setBookingData({...bookingData, notes: e.target.value})}
+                    value={scheduleData.notes}
+                    onChange={(e) => setScheduleData({...scheduleData, notes: e.target.value})}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Any specific topics or requirements..."
+                    placeholder="Any special instructions or notes..."
                   />
                 </div>
                 
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Session Summary</h4>
+                  <h4 className="font-medium text-gray-900 mb-2">Session Details</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span>Duration:</span>
-                      <span>{bookingData.duration} hour(s)</span>
+                      <span>Tutor:</span>
+                      <span>{selectedTutor.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Date:</span>
+                      <span>{formatDate(selectedDate)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Time:</span>
+                      <span>{selectedTimeSlot.startTime} - {selectedTimeSlot.endTime}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Rate:</span>
                       <span>${selectedTutor.hourlyRate}/hour</span>
-                    </div>
-                    <div className="flex justify-between font-medium">
-                      <span>Total:</span>
-                      <span>${selectedTutor.hourlyRate * bookingData.duration}</span>
                     </div>
                   </div>
                 </div>
@@ -560,7 +678,7 @@ export default function SchedulePage() {
                 <div className="flex space-x-3">
                   <button
                     type="button"
-                    onClick={() => setShowBookingForm(false)}
+                    onClick={() => setShowScheduleForm(false)}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                   >
                     Cancel
@@ -569,7 +687,174 @@ export default function SchedulePage() {
                     type="submit"
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
-                    Confirm Booking
+                    Schedule Session
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Tutor Form Modal */}
+      {showAddTutorForm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Add New Tutor</h3>
+                <button
+                  onClick={() => setShowAddTutorForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddTutor} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newTutorData.name}
+                    onChange={(e) => setNewTutorData({...newTutorData, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Subjects *
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {subjects.map(subject => (
+                      <label key={subject} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={newTutorData.subjects.includes(subject)}
+                          onChange={(e) => {
+                            const newSubjects = e.target.checked
+                              ? [...newTutorData.subjects, subject]
+                              : newTutorData.subjects.filter(s => s !== subject)
+                            setNewTutorData({...newTutorData, subjects: newSubjects})
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">{subject}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Classes *
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {classes.map(classLevel => (
+                      <label key={classLevel} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={newTutorData.classes.includes(classLevel)}
+                          onChange={(e) => {
+                            const newClasses = e.target.checked
+                              ? [...newTutorData.classes, classLevel]
+                              : newTutorData.classes.filter(c => c !== classLevel)
+                            setNewTutorData({...newTutorData, classes: newClasses})
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">{classLevel}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Experience *
+                  </label>
+                  <select
+                    required
+                    value={newTutorData.experience}
+                    onChange={(e) => setNewTutorData({...newTutorData, experience: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select experience</option>
+                    <option value="0-1 years">0-1 years</option>
+                    <option value="1-3 years">1-3 years</option>
+                    <option value="3-5 years">3-5 years</option>
+                    <option value="5-10 years">5-10 years</option>
+                    <option value="10+ years">10+ years</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hourly Rate *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="0.01"
+                    value={newTutorData.hourlyRate}
+                    onChange={(e) => setNewTutorData({...newTutorData, hourlyRate: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0.00"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Timezone *
+                  </label>
+                  <select
+                    required
+                    value={newTutorData.timezone}
+                    onChange={(e) => setNewTutorData({...newTutorData, timezone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select timezone</option>
+                    <option value="IST">IST (India)</option>
+                    <option value="EST">EST (Eastern US)</option>
+                    <option value="PST">PST (Pacific US)</option>
+                    <option value="GMT">GMT (UK)</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status *
+                  </label>
+                  <select
+                    required
+                    value={newTutorData.status}
+                    onChange={(e) => setNewTutorData({...newTutorData, status: e.target.value as 'active' | 'inactive' | 'on_leave'})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="on_leave">On Leave</option>
+                  </select>
+                </div>
+                
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddTutorForm(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Add Tutor
                   </button>
                 </div>
               </form>
