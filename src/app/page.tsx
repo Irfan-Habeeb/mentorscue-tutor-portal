@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { GraduationCap, Users, Shield } from 'lucide-react'
+import { GraduationCap, Users, Shield, Calendar } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -15,6 +15,9 @@ export default function Home() {
             <nav className="hidden md:flex space-x-8">
               <Link href="/apply" className="text-gray-500 hover:text-gray-900">
                 Apply as Tutor
+              </Link>
+              <Link href="/schedule" className="text-gray-500 hover:text-gray-900">
+                Schedule Sessions
               </Link>
               <Link href="/admin" className="text-gray-500 hover:text-gray-900">
                 Admin Dashboard
@@ -42,6 +45,13 @@ export default function Home() {
             >
               Apply as Tutor
               <Users className="ml-2 h-5 w-5" />
+            </Link>
+            <Link
+              href="/schedule"
+              className="inline-flex items-center px-8 py-4 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors"
+            >
+              Schedule Sessions
+              <Calendar className="ml-2 h-5 w-5" />
             </Link>
             <Link
               href="/admin"

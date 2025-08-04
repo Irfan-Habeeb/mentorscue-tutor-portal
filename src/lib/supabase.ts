@@ -55,3 +55,32 @@ export interface Class {
   level: string
   created_at: string
 }
+
+export interface Booking {
+  id: string
+  tutor_id: string
+  student_name: string
+  student_email: string
+  subject: string
+  date: string
+  start_time: string
+  end_time: string
+  duration: number
+  total_price: number
+  status: 'pending' | 'confirmed' | 'cancelled'
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Tutor {
+  id: string
+  name: string
+  subjects: string[]
+  classes: string[]
+  experience: string
+  rating: number
+  hourly_rate: number
+  timezone: string
+  created_at: string
+}
