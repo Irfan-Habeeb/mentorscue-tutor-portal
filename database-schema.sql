@@ -105,8 +105,9 @@ CREATE INDEX idx_applications_status ON applications(status);
 CREATE INDEX idx_applications_applied_at ON applications(applied_at);
 CREATE INDEX idx_applications_personal_info_email ON applications USING GIN ((personal_info->>'email'));
 
-CREATE INDEX idx_tutors_subjects ON tutors USING GIN (subjects);
-CREATE INDEX idx_tutors_classes ON tutors USING GIN (classes);
+-- Use BTREE indexes for text arrays instead of GIN
+CREATE INDEX idx_tutors_subjects ON tutors USING GIN (subjects gin__int_ops);
+CREATE INDEX idx_tutors_classes ON tutors USING GIN (classes gin__int_ops);
 CREATE INDEX idx_tutors_rating ON tutors(rating);
 CREATE INDEX idx_tutors_status ON tutors(status);
 
