@@ -12,10 +12,19 @@ A professional tutor selection and management web application for Mentorscue. Bu
 - **Availability**: Preferred hours, available days, timezone
 - **Additional Information**: Motivation, specializations, references
 
+### For Students (Scheduling)
+- **Tutor Discovery**: Browse tutors by subject and class level
+- **Interactive Calendar**: Select dates and view available time slots
+- **Real-time Availability**: See which time slots are available/booked
+- **Booking System**: Complete booking form with session details
+- **Session Management**: Duration selection, pricing calculation
+- **Responsive Design**: Works on desktop and mobile devices
+
 ### For Admins (Dashboard)
 - **Application Overview**: Total, pending, approved, rejected applications
 - **Advanced Filtering**: Search by name/email, filter by status and subject
 - **Application Management**: View details, approve, reject applications
+- **Booking Management**: View and manage all scheduled sessions
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## 🛠️ Tech Stack
@@ -114,6 +123,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 - Progress indicator
 - Success confirmation
 
+### Scheduling System (`/schedule`)
+- Tutor discovery and filtering
+- Interactive calendar
+- Time slot selection
+- Booking form with pricing
+- Session management
+
 ### Admin Dashboard (`/admin`)
 - Application statistics
 - Search and filtering
@@ -123,7 +139,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ## 🔮 Future Enhancements
 
 ### Phase 2
-- [ ] Supabase integration for data persistence
+- [x] Supabase integration for data persistence
+- [x] Comprehensive scheduling system
 - [ ] Email notifications
 - [ ] File upload for resumes
 - [ ] Interview scheduling
