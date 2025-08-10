@@ -1,61 +1,27 @@
 'use client'
 
-import { useState } from 'react'
-import { GraduationCap, ArrowLeft, CheckCircle } from 'lucide-react'
-import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-interface ApplicationForm {
-  personalInfo: {
-    firstName: string
-    lastName: string
-    email: string
-    phone: string
-    dateOfBirth: string
-  }
-  education: {
-    degree: string
-    institution: string
-    graduationYear: string
-    gpa: string
-  }
-  experience: {
-    yearsOfTeaching: string
-    subjects: string[]
-    classes: string[]
-    previousInstitutions: string
-  }
-  availability: {
-    preferredHours: string
-    availableDays: string[]
-    timeZone: string
-  }
-  additional: {
-    whyJoin: string
-    specializations: string
-    references: string
-  }
+interface Subject {
+  id: number
+  name: string
+  category?: string
 }
 
-const subjects = [
-  'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English',
-  'History', 'Geography', 'Computer Science', 'Economics',
-  'Literature', 'Art', 'Music', 'Physical Education'
-]
-
-const classes = [
-  'Class 1-5', 'Class 6-8', 'Class 9-10', 'Class 11-12',
-  'Undergraduate', 'Graduate', 'Professional'
-]
-
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+interface Class {
+  id: number
+  name: string
+  level?: string
+}
 
 export default function ApplyPage() {
-  const [currentStep, setCurrentStep] = useState(1)
+  const router = useRouter()
+  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [classes, setClasses] = useState<Class[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  
-  const [formData, setFormData] = useState<ApplicationForm>({
-    personalInfo: {
+  const [formData, setFormData] = useState({
+    personal_info: {
       firstName: '',
       lastName: '',
       email: '',
@@ -70,13 +36,13 @@ export default function ApplyPage() {
     },
     experience: {
       yearsOfTeaching: '',
-      subjects: [],
-      classes: [],
+      subjects: [] as string[],
+      classes: [] as string[],
       previousInstitutions: ''
     },
     availability: {
       preferredHours: '',
-      availableDays: [],
+      availableDays: [] as string[],
       timeZone: ''
     },
     additional: {
@@ -86,11 +52,37 @@ export default function ApplyPage() {
     }
   })
 
-  const updateFormData = (section: keyof ApplicationForm, field: string, value: string | string[]) => {
+  useEffect(() => {
+    // Fetch subjects and classes
+    const fetchData = async () => {
+      try {
+        const [subjectsRes, classesRes] = await Promise.all([
+          fetch('/api/subjects'),
+          fetch('/api/classes')
+        ])
+        
+        if (subjectsRes.ok) {
+          const subjectsData = await subjectsRes.json()
+          setSubjects(subjectsData)
+        }
+        
+        if (classesRes.ok) {
+          const classesData = await classesRes.json()
+          setClasses(classesData)
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const updateFormData = (section: string, field: string, value: string | string[]) => {
     setFormData(prev => ({
       ...prev,
       [section]: {
-        ...prev[section],
+        ...prev[section as keyof typeof prev],
         [field]: value
       }
     }))
@@ -99,457 +91,333 @@ export default function ApplyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     try {
       const response = await fetch('/api/applications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          status: 'pending'
+        }),
       })
 
-      if (!response.ok) {
+      if (response.ok) {
+        alert('Application submitted successfully!')
+        router.push('/')
+      } else {
         throw new Error('Failed to submit application')
       }
-
-      setIsSubmitting(false)
-      setIsSubmitted(true)
     } catch (error) {
       console.error('Error submitting application:', error)
-      setIsSubmitting(false)
       alert('Failed to submit application. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-2xl mx-auto px-4 py-16">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Application Submitted!</h1>
-            <p className="text-gray-600 mb-6">
-              Thank you for your application. We will review your information and contact you within 3-5 business days.
-            </p>
-            <Link
-              href="/"
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <ArrowLeft className="mr-2 h-5 w-5" />
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
+  const handleCheckboxChange = (section: string, field: string, value: string, checked: boolean) => {
+    const currentValues = formData[section as keyof typeof formData][field as keyof (typeof formData)[keyof typeof formData]] as string[]
+    
+    if (checked) {
+      updateFormData(section, field, [...currentValues, value])
+    } else {
+      updateFormData(section, field, currentValues.filter(v => v !== value))
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <Link href="/" className="flex items-center text-gray-500 hover:text-gray-900">
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Back to Home
-            </Link>
-            <div className="flex items-center">
-              <GraduationCap className="h-8 w-8 text-blue-600" />
-              <h1 className="ml-2 text-2xl font-bold text-gray-900">Mentorscue</h1>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white shadow-lg rounded-lg p-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+            Tutor Application Form
+          </h1>
 
-      {/* Progress Bar */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">Tutor Application</h2>
-            <span className="text-sm text-gray-500">Step {currentStep} of 5</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / 5) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8">
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Personal Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Personal Information */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    First Name *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                   <input
                     type="text"
                     required
-                    value={formData.personalInfo.firstName}
-                    onChange={(e) => updateFormData('personalInfo', 'firstName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.personal_info.firstName}
+                    onChange={(e) => updateFormData('personal_info', 'firstName', e.target.value)}
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Name *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                   <input
                     type="text"
                     required
-                    value={formData.personalInfo.lastName}
-                    onChange={(e) => updateFormData('personalInfo', 'lastName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.personal_info.lastName}
+                    onChange={(e) => updateFormData('personal_info', 'lastName', e.target.value)}
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <input
                     type="email"
                     required
-                    value={formData.personalInfo.email}
-                    onChange={(e) => updateFormData('personalInfo', 'email', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.personal_info.email}
+                    onChange={(e) => updateFormData('personal_info', 'email', e.target.value)}
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                   <input
                     type="tel"
                     required
-                    value={formData.personalInfo.phone}
-                    onChange={(e) => updateFormData('personalInfo', 'phone', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.personal_info.phone}
+                    onChange={(e) => updateFormData('personal_info', 'phone', e.target.value)}
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date of Birth *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
                   <input
                     type="date"
                     required
-                    value={formData.personalInfo.dateOfBirth}
-                    onChange={(e) => updateFormData('personalInfo', 'dateOfBirth', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.personal_info.dateOfBirth}
+                    onChange={(e) => updateFormData('personal_info', 'dateOfBirth', e.target.value)}
                   />
                 </div>
               </div>
             </div>
-          )}
 
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Education</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Education */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Education</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Degree/Certification *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Degree</label>
                   <input
                     type="text"
                     required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.education.degree}
                     onChange={(e) => updateFormData('education', 'degree', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Institution *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
                   <input
                     type="text"
                     required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.education.institution}
                     onChange={(e) => updateFormData('education', 'institution', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Graduation Year *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Graduation Year</label>
                   <input
                     type="number"
                     required
                     min="1950"
                     max="2030"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.education.graduationYear}
                     onChange={(e) => updateFormData('education', 'graduationYear', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GPA (Optional)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">GPA</label>
                   <input
-                    type="text"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="4"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.education.gpa}
                     onChange={(e) => updateFormData('education', 'gpa', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
             </div>
-          )}
 
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Teaching Experience</h3>
-              
-              <div className="space-y-6">
+            {/* Experience */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Teaching Experience</h2>
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Years of Teaching Experience *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Years of Teaching Experience</label>
                   <select
                     required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.experience.yearsOfTeaching}
                     onChange={(e) => updateFormData('experience', 'yearsOfTeaching', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Select years</option>
-                    <option value="0-1">0-1 years</option>
-                    <option value="1-3">1-3 years</option>
-                    <option value="3-5">3-5 years</option>
-                    <option value="5-10">5-10 years</option>
-                    <option value="10+">10+ years</option>
+                    <option value="">Select experience</option>
+                    <option value="0-1 years">0-1 years</option>
+                    <option value="1-3 years">1-3 years</option>
+                    <option value="3-5 years">3-5 years</option>
+                    <option value="5-10 years">5-10 years</option>
+                    <option value="10+ years">10+ years</option>
                   </select>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Subjects You Can Teach *
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Subjects You Can Teach</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {subjects.map((subject) => (
-                      <label key={subject} className="flex items-center">
+                      <label key={subject.id} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={formData.experience.subjects.includes(subject)}
-                          onChange={(e) => {
-                            const newSubjects = e.target.checked
-                              ? [...formData.experience.subjects, subject]
-                              : formData.experience.subjects.filter(s => s !== subject)
-                            updateFormData('experience', 'subjects', newSubjects)
-                          }}
                           className="mr-2"
+                          checked={formData.experience.subjects.includes(subject.name)}
+                          onChange={(e) => handleCheckboxChange('experience', 'subjects', subject.name, e.target.checked)}
                         />
-                        <span className="text-sm">{subject}</span>
+                        {subject.name}
                       </label>
                     ))}
                   </div>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Classes You Can Teach *
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {classes.map((classLevel) => (
-                      <label key={classLevel} className="flex items-center">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Classes You Can Teach</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {classes.map((cls) => (
+                      <label key={cls.id} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={formData.experience.classes.includes(classLevel)}
-                          onChange={(e) => {
-                            const newClasses = e.target.checked
-                              ? [...formData.experience.classes, classLevel]
-                              : formData.experience.classes.filter(c => c !== classLevel)
-                            updateFormData('experience', 'classes', newClasses)
-                          }}
                           className="mr-2"
+                          checked={formData.experience.classes.includes(cls.name)}
+                          onChange={(e) => handleCheckboxChange('experience', 'classes', cls.name, e.target.checked)}
                         />
-                        <span className="text-sm">{classLevel}</span>
+                        {cls.name}
                       </label>
                     ))}
                   </div>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Previous Teaching Institutions
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Previous Teaching Institutions</label>
                   <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
                     value={formData.experience.previousInstitutions}
                     onChange={(e) => updateFormData('experience', 'previousInstitutions', e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="List any previous institutions where you've taught..."
                   />
                 </div>
               </div>
             </div>
-          )}
 
-          {currentStep === 4 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Availability</h3>
-              
-              <div className="space-y-6">
+            {/* Availability */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Availability</h2>
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Preferred Hours per Week *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Teaching Hours</label>
                   <select
                     required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.availability.preferredHours}
                     onChange={(e) => updateFormData('availability', 'preferredHours', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select hours</option>
-                    <option value="5-10">5-10 hours</option>
-                    <option value="10-20">10-20 hours</option>
-                    <option value="20-30">20-30 hours</option>
-                    <option value="30+">30+ hours</option>
+                    <option value="Morning (8 AM - 12 PM)">Morning (8 AM - 12 PM)</option>
+                    <option value="Afternoon (12 PM - 4 PM)">Afternoon (12 PM - 4 PM)</option>
+                    <option value="Evening (4 PM - 8 PM)">Evening (4 PM - 8 PM)</option>
+                    <option value="Night (8 PM - 12 AM)">Night (8 PM - 12 AM)</option>
+                    <option value="Flexible">Flexible</option>
                   </select>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Available Days *
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {days.map((day) => (
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Available Days</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
                       <label key={day} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={formData.availability.availableDays.includes(day)}
-                          onChange={(e) => {
-                            const newDays = e.target.checked
-                              ? [...formData.availability.availableDays, day]
-                              : formData.availability.availableDays.filter(d => d !== day)
-                            updateFormData('availability', 'availableDays', newDays)
-                          }}
                           className="mr-2"
+                          checked={formData.availability.availableDays.includes(day)}
+                          onChange={(e) => handleCheckboxChange('availability', 'availableDays', day, e.target.checked)}
                         />
-                        <span className="text-sm">{day}</span>
+                        {day}
                       </label>
                     ))}
                   </div>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Time Zone *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
                   <select
                     required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.availability.timeZone}
                     onChange={(e) => updateFormData('availability', 'timeZone', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select timezone</option>
-                    <option value="IST">IST (India)</option>
-                    <option value="EST">EST (Eastern US)</option>
-                    <option value="PST">PST (Pacific US)</option>
-                    <option value="GMT">GMT (UK)</option>
-                    <option value="Other">Other</option>
+                    <option value="EST">Eastern Standard Time (EST)</option>
+                    <option value="CST">Central Standard Time (CST)</option>
+                    <option value="MST">Mountain Standard Time (MST)</option>
+                    <option value="PST">Pacific Standard Time (PST)</option>
+                    <option value="UTC">UTC</option>
                   </select>
                 </div>
               </div>
             </div>
-          )}
 
-          {currentStep === 5 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Additional Information</h3>
-              
-              <div className="space-y-6">
+            {/* Additional Information */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Additional Information</h2>
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Why do you want to join Mentorscue? *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Why do you want to join our platform?</label>
                   <textarea
                     required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
                     value={formData.additional.whyJoin}
                     onChange={(e) => updateFormData('additional', 'whyJoin', e.target.value)}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Tell us about your motivation to join our team..."
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Specializations or Areas of Expertise
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teaching Specializations</label>
                   <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
                     value={formData.additional.specializations}
                     onChange={(e) => updateFormData('additional', 'specializations', e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Any specific areas you specialize in..."
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    References (Optional)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">References</label>
                   <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
                     value={formData.additional.references}
                     onChange={(e) => updateFormData('additional', 'references', e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Contact information for professional references..."
                   />
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
-            {currentStep > 1 && (
-              <button
-                type="button"
-                onClick={() => setCurrentStep(currentStep - 1)}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                Previous
-              </button>
-            )}
-            
-            {currentStep < 5 ? (
-              <button
-                type="button"
-                onClick={() => setCurrentStep(currentStep + 1)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-auto"
-              >
-                Next
-              </button>
-            ) : (
+            <div className="flex justify-end">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 ml-auto"
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-8 rounded-lg transition duration-200"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Application'}
               </button>
-            )}
-          </div>
-        </form>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   )
