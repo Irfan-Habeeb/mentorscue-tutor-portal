@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { GraduationCap, Calendar, Clock, Users, MapPin, BookOpen, ArrowLeft, CheckCircle, XCircle, Plus, Edit, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { GraduationCap, Calendar, Users, BookOpen, ArrowLeft, XCircle, Plus, Edit, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 
 interface Tutor {
@@ -240,7 +240,6 @@ export default function SchedulePage() {
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
     const month = date.getMonth()
-    const firstDay = new Date(year, month, 1)
     const lastDay = new Date(year, month + 1, 0)
     const days = []
     
@@ -520,7 +519,7 @@ export default function SchedulePage() {
                 {/* Today's Schedules */}
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Today's Schedules for {selectedTutor.name}
+                    Today&apos;s Schedules for {selectedTutor.name}
                   </h3>
                   <div className="space-y-3">
                     {schedules

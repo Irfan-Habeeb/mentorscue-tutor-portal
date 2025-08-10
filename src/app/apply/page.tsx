@@ -86,7 +86,7 @@ export default function ApplyPage() {
     }
   })
 
-  const updateFormData = (section: keyof ApplicationForm, field: string, value: any) => {
+  const updateFormData = (section: keyof ApplicationForm, field: string, value: string | string[]) => {
     setFormData(prev => ({
       ...prev,
       [section]: {

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { GraduationCap, Search, Filter, Eye, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { GraduationCap, Search, Eye, CheckCircle, XCircle, Clock } from 'lucide-react'
 import Link from 'next/link'
 
 interface Application {
@@ -31,7 +31,8 @@ interface Application {
   appliedAt: string
 }
 
-// Mock data
+// Mock data - commented out as not currently used
+/*
 const mockApplications: Application[] = [
   {
     id: '1',
@@ -112,6 +113,7 @@ const mockApplications: Application[] = [
     appliedAt: '2024-01-05'
   }
 ]
+*/
 
 export default function AdminPage() {
   const [applications, setApplications] = useState<Application[]>([])
@@ -134,9 +136,9 @@ export default function AdminPage() {
   // Fetch applications on component mount
   useEffect(() => {
     fetchApplications()
-  }, [])
+  }, [fetchApplications])
 
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       if (statusFilter !== 'all') params.append('status', statusFilter)
@@ -153,7 +155,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter, subjectFilter, searchTerm])
 
   const updateApplicationStatus = async (id: string, status: Application['status']) => {
     try {
