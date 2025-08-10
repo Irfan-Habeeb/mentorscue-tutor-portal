@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, mockData } from '@/lib/supabase'
+import { supabase, mockData, Application } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       
       // Filter by subject
       if (subject && subject !== 'all') {
-        applications = applications.filter(app => 
+        applications = applications.filter((app: Application) => 
           app.experience.subjects?.includes(subject)
         )
       }
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
       // Search by name or email
       if (search) {
         const searchLower = search.toLowerCase()
-        applications = applications.filter(app => 
+        applications = applications.filter((app: Application) => 
           app.personal_info.firstName.toLowerCase().includes(searchLower) ||
           app.personal_info.lastName.toLowerCase().includes(searchLower) ||
           app.personal_info.email.toLowerCase().includes(searchLower)

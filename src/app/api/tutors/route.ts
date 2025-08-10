@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         hourly_rate: parseFloat(hourly_rate),
         timezone,
         status: status || 'active',
-        avatar_url: null,
+        avatar_url: undefined,
         bio,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

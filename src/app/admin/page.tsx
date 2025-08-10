@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 interface Application {
   id: string
-  personalInfo: {
+  personal_info: {
     firstName: string
     lastName: string
     email: string
@@ -28,7 +28,7 @@ interface Application {
     timeZone: string
   }
   status: 'pending' | 'reviewed' | 'approved' | 'rejected'
-  appliedAt: string
+  applied_at: string
 }
 
 // Mock data - commented out as not currently used
@@ -123,21 +123,6 @@ export default function AdminPage() {
   const [subjectFilter, setSubjectFilter] = useState('all')
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
 
-  // Filter applications client-side for search
-  const filteredApplications = applications.filter(app => {
-    const matchesSearch = 
-      app.personal_info.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.personal_info.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.personal_info.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    return matchesSearch
-  })
-
-  // Fetch applications on component mount
-  useEffect(() => {
-    fetchApplications()
-  }, [fetchApplications])
-
   const fetchApplications = useCallback(async () => {
     try {
       const params = new URLSearchParams()
@@ -156,6 +141,21 @@ export default function AdminPage() {
       setLoading(false)
     }
   }, [statusFilter, subjectFilter, searchTerm])
+
+  // Filter applications client-side for search
+  const filteredApplications = applications.filter(app => {
+    const matchesSearch = 
+      app.personal_info.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.personal_info.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.personal_info.email.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    return matchesSearch
+  })
+
+  // Fetch applications on component mount
+  useEffect(() => {
+    fetchApplications()
+  }, [fetchApplications])
 
   const updateApplicationStatus = async (id: string, status: Application['status']) => {
     try {
@@ -471,13 +471,13 @@ export default function AdminPage() {
                   <h4 className="font-medium text-gray-900 mb-2">Personal Information</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="font-medium">Name:</span> {selectedApplication.personalInfo.firstName} {selectedApplication.personalInfo.lastName}
+                      <span className="font-medium">Name:</span> {selectedApplication.personal_info.firstName} {selectedApplication.personal_info.lastName}
                     </div>
                     <div>
-                      <span className="font-medium">Email:</span> {selectedApplication.personalInfo.email}
+                                              <span className="font-medium">Email:</span> {selectedApplication.personal_info.email}
                     </div>
                     <div>
-                      <span className="font-medium">Phone:</span> {selectedApplication.personalInfo.phone}
+                                              <span className="font-medium">Phone:</span> {selectedApplication.personal_info.phone}
                     </div>
                   </div>
                 </div>

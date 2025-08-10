@@ -13,7 +13,12 @@ export const supabase = isSupabaseConfigured
   : null
 
 // Mock data for development when Supabase is not configured
-export const mockData = {
+export const mockData: {
+  applications: Application[]
+  tutors: Tutor[]
+  schedules: Schedule[]
+  bookings: Booking[]
+} = {
   applications: [],
   tutors: [
     {
@@ -26,7 +31,7 @@ export const mockData = {
       hourly_rate: 45,
       timezone: 'EST',
       status: 'active',
-      avatar_url: null,
+      avatar_url: undefined,
       bio: 'Experienced mathematics and physics tutor with a passion for teaching.',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
@@ -41,13 +46,14 @@ export const mockData = {
       hourly_rate: 50,
       timezone: 'PST',
       status: 'active',
-      avatar_url: null,
+      avatar_url: undefined,
       bio: 'Computer science expert with strong mathematical background.',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z'
     }
   ],
-  schedules: []
+  schedules: [],
+  bookings: []
 }
 
 // Database Types
@@ -58,29 +64,29 @@ export interface Application {
     lastName: string
     email: string
     phone: string
-    address: string
+    dateOfBirth: string
   }
   education: {
     degree: string
     institution: string
     graduationYear: string
-    gpa?: string
+    gpa: string
   }
   experience: {
-    yearsOfExperience: string
-    previousInstitutions: string[]
-    certifications: string[]
+    yearsOfTeaching: string
+    subjects: string[]
+    classes: string[]
+    previousInstitutions: string
   }
   availability: {
-    preferredSubjects: string[]
-    preferredClasses: string[]
-    availableHours: string[]
-    timezone: string
+    preferredHours: string
+    availableDays: string[]
+    timeZone: string
   }
   additional: {
     whyJoin: string
-    teachingPhilosophy: string
-    references: string[]
+    specializations: string
+    references: string
   }
   status: 'pending' | 'reviewed' | 'approved' | 'rejected'
   applied_at: string
@@ -131,4 +137,21 @@ export interface Class {
   name: string
   level?: string
   created_at: string
+}
+
+export interface Booking {
+  id: string
+  tutor_id: string
+  student_name: string
+  student_email: string
+  subject: string
+  date: string
+  start_time: string
+  end_time: string
+  duration: number
+  total_price: number
+  status: string
+  notes?: string
+  created_at: string
+  updated_at: string
 }
