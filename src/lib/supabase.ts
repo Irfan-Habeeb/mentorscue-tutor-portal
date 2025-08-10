@@ -1,9 +1,39 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const isSupabaseConfigured = supabaseUrl && supabaseAnonKey &&
+  supabaseUrl !== 'your_supabase_project_url' &&
+  supabaseAnonKey !== 'your_supabase_anon_key'
+
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
+
+export const mockData: {
+  applications: Application[]
+  subjects: Subject[]
+  classes: Class[]
+} = {
+  applications: [],
+  subjects: [
+    { id: 1, name: 'Mathematics', category: 'Science', created_at: '2024-01-01T00:00:00Z' },
+    { id: 2, name: 'Physics', category: 'Science', created_at: '2024-01-01T00:00:00Z' },
+    { id: 3, name: 'Chemistry', category: 'Science', created_at: '2024-01-01T00:00:00Z' },
+    { id: 4, name: 'Biology', category: 'Science', created_at: '2024-01-01T00:00:00Z' },
+    { id: 5, name: 'English', category: 'Language', created_at: '2024-01-01T00:00:00Z' },
+    { id: 6, name: 'History', category: 'Social Studies', created_at: '2024-01-01T00:00:00Z' },
+    { id: 7, name: 'Computer Science', category: 'Technology', created_at: '2024-01-01T00:00:00Z' }
+  ],
+  classes: [
+    { id: 1, name: 'Class 1-5', level: 'Primary', created_at: '2024-01-01T00:00:00Z' },
+    { id: 2, name: 'Class 6-8', level: 'Middle', created_at: '2024-01-01T00:00:00Z' },
+    { id: 3, name: 'Class 9-10', level: 'Secondary', created_at: '2024-01-01T00:00:00Z' },
+    { id: 4, name: 'Class 11-12', level: 'Higher Secondary', created_at: '2024-01-01T00:00:00Z' },
+    { id: 5, name: 'Undergraduate', level: 'University', created_at: '2024-01-01T00:00:00Z' }
+  ]
+}
 
 // Database Types
 export interface Application {
@@ -13,64 +43,32 @@ export interface Application {
     lastName: string
     email: string
     phone: string
-    address: string
+    dateOfBirth: string
   }
   education: {
     degree: string
     institution: string
     graduationYear: string
-    gpa?: string
+    gpa: string
   }
   experience: {
-    yearsOfExperience: string
-    previousInstitutions: string[]
-    certifications: string[]
+    yearsOfTeaching: string
+    subjects: string[]
+    classes: string[]
+    previousInstitutions: string
   }
   availability: {
-    preferredSubjects: string[]
-    preferredClasses: string[]
-    availableHours: string[]
-    timezone: string
+    preferredHours: string
+    availableDays: string[]
+    timeZone: string
   }
   additional: {
     whyJoin: string
-    teachingPhilosophy: string
-    references: string[]
+    specializations: string
+    references: string
   }
   status: 'pending' | 'reviewed' | 'approved' | 'rejected'
   applied_at: string
-  updated_at: string
-}
-
-export interface Tutor {
-  id: string
-  name: string
-  subjects: string[]
-  classes: string[]
-  experience: string
-  rating: number
-  hourly_rate: number
-  timezone: string
-  status: 'active' | 'inactive' | 'on_leave'
-  avatar_url?: string
-  bio?: string
-  created_at: string
-  updated_at: string
-}
-
-export interface Schedule {
-  id: string
-  tutor_id: string
-  date: string
-  start_time: string
-  end_time: string
-  subject: string
-  class_level: string
-  student_name: string
-  student_contact: string
-  status: 'scheduled' | 'completed' | 'cancelled'
-  notes?: string
-  created_at: string
   updated_at: string
 }
 
